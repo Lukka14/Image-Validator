@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring BOOt Test</title>
+    <script src="js/script.js"></script>
+    <script src="../static/js/script.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>WebPage checker</h1>
+    <form action="" method="post" onsubmit="showWebPageStatus(event); enablePlayList()">
+<!--        <input type="text" name="url" placeholder="Enter WebPage URL" required />-->
+        <div class="container">
+        <textarea id="urlTextArea" name="url"> </textarea> <br>
+        <input type="submit" />
+        </div>
+    </form>
+    <div id="loader"></div>
+    <h3>Proxy enabled: <input type="checkbox" id="proxyEnabled"> </h3>
+
+    <h2 id="scanning">Scanning web pages: </h2>
+
+    <ul id="pageList" class="container">
+        <li class="pageListItem">
+            <h2 ><a class="pageUrl" target="_blank"> </a></h2>
+            <button onclick="showInvalidPictures(this.parentElement)" class="invalidPicturesBtn">Show invalid pictures </button>
+            <span class="permissionWarning">
+                <span class="alert-icon">!</span>
+                <span>Permission denied, try with proxy enabled.</span>
+            </span>
+            <h2 class="invalidPics"> </h2>
+            <ul class="status">
+            </ul>
+        </li>
+    </ul>
+</div>
+</body>
+</html>
