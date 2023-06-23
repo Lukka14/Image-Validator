@@ -145,6 +145,17 @@ public class GmailApi {
         return urls;
     }
 
+    public List<String> getPageUrl () throws IOException {
+        List<String> pageUrlList = new ArrayList<>();
+        List<List<String>> csvData = getMailBody("188d9147be8a0252");
+        List<String> rowData = csvData.get(0);
+        int pageUrlIndex = getUrlIndex(rowData);
+        for (int i = 1; i < csvData.size(); i++) {
+            pageUrlList.add(csvData.get(i).get(pageUrlIndex));
+        }
+        return pageUrlList;
+    }
+
     public void writeCSVFile(List<List<String>> urls, List<String> status) throws IOException {
         File file = new File("src/main/java/com/example/springboottest/api/csv/new.csv");
         FileWriter csvWriter = new FileWriter(file);
