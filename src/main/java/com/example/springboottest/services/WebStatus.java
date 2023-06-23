@@ -81,13 +81,13 @@ public class WebStatus {
             }
             connection.setRequestMethod("HEAD");
             int responseCode = connection.getResponseCode();
-            System.out.println(" ================ ");
-            System.out.println("imageUrl = " + imageUrl);
-            System.out.println("responseCode = " + responseCode);
-            System.out.println(" ================ ");
+//            System.out.println(" ================ ");
+//            System.out.println("imageUrl = " + imageUrl);
+//            System.out.println("responseCode = " + responseCode);
+//            System.out.println(" ================ ");
             return (responseCode);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            return -1;
         }
     }
 }
