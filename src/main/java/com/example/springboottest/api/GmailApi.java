@@ -1,38 +1,49 @@
 package com.example.springboottest.api;
 
+import com.example.springboottest.services.CSVFile;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.Base64;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
 import com.google.api.services.gmail.model.MessagePartBody;
 import com.mashape.unirest.http.Unirest;
+import io.opencensus.stats.Measure;
 import org.json.JSONObject;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.Session;
+import javax.mail.internet.*;
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class GmailApi {
     public static final String TOKEN_URL = "https://accounts.google.com/o/oauth2/token";
-    private static final String URL_COLUMN_NAME = "shortedUrl";
     private final String APPLICATION_NAME = "Gmail API Java Quickstart";
     private final String GRANT_TYPE = "refresh_token";
     private final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private final String USER = "me";
     private final JSONObject clientCredentials = new JSONObject();
     private Gmail gmailService;
+
     public GmailApi(String clientId, String clientSecret, String refreshToken) {
         setCredentials(clientId, clientSecret, refreshToken);
         buildGmailService();
     }
 
-    private void setCredentials(String clientId, String clientSecret, String refreshToken) {
+    public void setCredentials(String clientId, String clientSecret, String refreshToken) {
         clientCredentials.put("client_id", clientId);
         clientCredentials.put("client_secret", clientSecret);
         clientCredentials.put("refresh_token", refreshToken);
@@ -55,29 +66,36 @@ public class GmailApi {
             throw new RuntimeException("Error, could not authorize");
         }
     }
-    private byte[] getAttachmentBytes(Gmail gmail, String messageId, String attachmentId)
+
+    private byte[] getAttachmentBytes(String messageId, String attachmentId)
             throws IOException {
-        MessagePartBody attachmentPart = gmail.users().messages().attachments()
+        MessagePartBody attachmentPart = gmailService.users().messages().attachments()
                 .get(USER, messageId, attachmentId).execute();
         return com.google.api.client.util.Base64.decodeBase64(attachmentPart.getData());
     }
-    public List<List<String>> getMailBody(String messageId) throws IOException {
-        List<List<String>> urlList = new ArrayList<>();
-        Message fullMessage = getMessageById(messageId);
 
-        List<MessagePart> parts = fullMessage.getPayload().getParts();
-        if (parts != null) {
-            for (MessagePart part : parts) {
-                String filename = part.getFilename();
-                String attachmentId = part.getBody().getAttachmentId();
-                if (filename != null && attachmentId != null) {
-                    byte[] attachmentBytes = getAttachmentBytes(gmailService, messageId, attachmentId);
-                    urlList = processCSVFile(attachmentBytes);
+    public CSVFile getAttachmentData(String messageId) {
+        CSVFile csvFile = null;
+        try {
+            Message fullMessage = getMessageById(messageId);
+
+            List<MessagePart> parts = fullMessage.getPayload().getParts();
+            if (parts != null) {
+                for (MessagePart part : parts) {
+                    String filename = part.getFilename();
+                    String attachmentId = part.getBody().getAttachmentId();
+                    if (filename != null && attachmentId != null) {
+                        byte[] attachmentBytes = getAttachmentBytes(messageId, attachmentId);
+                        csvFile = processCSVFile(attachmentBytes);
+                    }
                 }
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return urlList;
+        return csvFile;
     }
+
     private Message getMessageById(String messageId) throws IOException {
         return gmailService.users().messages().get(USER, messageId).execute();
     }
@@ -90,7 +108,7 @@ public class GmailApi {
         // Send the POST request and parse the response to extract the access token
         String response = null;
         try {
-            response = sendPostRequest(TOKEN_URL, requestBody);
+            response = sendPostRequest(requestBody);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -106,8 +124,9 @@ public class GmailApi {
         jsonObject.put("grant_type", GRANT_TYPE);
         return jsonObject.toString();
     }
-    private String sendPostRequest(String url, String requestBody) throws Exception {
-        return Unirest.post(url)
+
+    private String sendPostRequest(String requestBody) throws Exception {
+        return Unirest.post(TOKEN_URL)
                 .header("Content-Type", "application/json")
                 .body(requestBody)
                 .asString().getBody(); // Return the response body as a string
@@ -119,66 +138,92 @@ public class GmailApi {
         int endOfAccess_token = subString.indexOf("\"");
         return subString.substring(0, endOfAccess_token); // Return the extracted access token
     }
-    private List<List<String>> processCSVFile(byte[] attachmentBytes) throws IOException {
-//        List<String> urlList = new ArrayList<>();
-        List<List<String>> urls = new ArrayList<>();
+
+    private CSVFile processCSVFile(byte[] attachmentBytes) throws IOException {
+
         InputStreamReader inputStreamReader = new InputStreamReader(new ByteArrayInputStream(attachmentBytes));
         BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-        String line = bufferedReader.readLine();
-        line = bufferedReader.readLine();
-        List<String> data = new ArrayList<>(List.of(line.split(",")));
-        urls.add(data);
-//        int urlIndex = getUrlIndex(line);
-        int i = 0; //todo wasashleli
-        while ((line = bufferedReader.readLine()) != null && i < 10) {
-            data = new ArrayList<>(List.of(line.split("\",\"")));
-            urls.add(data);
-//            String[] data = line.split("\",\"");
-//            urlList.add(data[urlIndex]);
-            i++; //todo wasashleli
+        List<String> csvFileRow = new ArrayList<>();
+        String line;
+        int i = 0;
+        int dataSize = 5; //todo monacemta shezgudva
+        while ((line = bufferedReader.readLine()) != null && i < dataSize + 2) {
+            csvFileRow.add(line);
+            i++;
         }
+        CSVFile csvFile = new CSVFile(csvFileRow);
 
-//        writeCSVFile(urls);
         bufferedReader.close();
         inputStreamReader.close();
 
-        return urls;
+        return csvFile;
     }
 
-    public List<String> getPageUrl () throws IOException {
-        List<String> pageUrlList = new ArrayList<>();
-        List<List<String>> csvData = getMailBody("188d9147be8a0252");
-        List<String> rowData = csvData.get(0);
-        int pageUrlIndex = getUrlIndex(rowData);
-        for (int i = 1; i < csvData.size(); i++) {
-            pageUrlList.add(csvData.get(i).get(pageUrlIndex));
+    public void sendMessage(MimeMessage email) {
+        Message message = createMessageWithEmail(email);
+        try {
+            message = gmailService.users().messages().send(USER, message).execute();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return pageUrlList;
+        System.out.println("Message Id:" + message.getId());
+        try {
+            System.out.println(message.toPrettyString());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public void writeCSVFile(List<List<String>> urls, List<String> status) throws IOException {
-        File file = new File("src/main/java/com/example/springboottest/api/csv/new.csv");
-        FileWriter csvWriter = new FileWriter(file);
-        System.out.println("urls.size() = "+ urls.size());
-        System.out.println("status.size() = " + status.size());
-        int index = 0;
-        csvWriter.append("sep=,\n");
-        csvWriter.append(String.join(",", urls.get(index)));
-        csvWriter.append(",").append(status.get(index));
-        csvWriter.append("\n");
-        index++;
-        for (; index < urls.size(); index++) {
-            csvWriter.append(String.join("\",\"", urls.get(index)));
-            csvWriter.append(",\"").append(status.get(index)).append("\"");
-            csvWriter.append("\n");
-        }
-        csvWriter.close();
+    public static MimeMessage createEmail(String to, String from, String subject, String bodyText) throws MessagingException {
+        Properties props = new Properties();
+        Session session = Session.getDefaultInstance(props, null);
+
+        MimeMessage email = new MimeMessage(session);
+        email.setFrom(new InternetAddress(from));
+        email.addRecipient(javax.mail.Message.RecipientType.TO,
+                new InternetAddress(to));
+        email.setSubject(subject);
+        email.setText(bodyText);
+        return email;
     }
 
-    public int getUrlIndex(List<String> data) {
-        for (int i = 0; i < data.size(); i++) {
-            if (data.get(i).equals(URL_COLUMN_NAME)) return i;
+    public static MimeMessage createEmailWithAttachment(String to, String from, String subject, String bodyText, File file) throws MessagingException {
+        Properties props = new Properties();
+        Session session = Session.getDefaultInstance(props, null);
+
+        MimeMessage email = new MimeMessage(session);
+
+        email.setFrom(new InternetAddress(from));
+        email.addRecipient (javax.mail.Message.RecipientType.TO, new InternetAddress(to));
+        email.setSubject(subject);
+
+        MimeBodyPart mimeBodyPart = new MimeBodyPart();
+        mimeBodyPart.setContent(bodyText, "text/csv") ;
+
+        Multipart multipart = new MimeMultipart();
+        multipart.addBodyPart(mimeBodyPart);
+
+        mimeBodyPart = new MimeBodyPart();
+        DataSource source = new FileDataSource(file);
+
+        mimeBodyPart.setDataHandler(new DataHandler(source) ) ;
+        mimeBodyPart.setFileName(file.getName());
+
+        multipart.addBodyPart(mimeBodyPart);
+        email.setContent(multipart, "text/csv");
+        return email;
+    }
+
+    private Message createMessageWithEmail(MimeMessage email) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            email.writeTo(baos);
+        } catch (IOException | MessagingException e) {
+            throw new RuntimeException(e);
         }
-        return -1;
+        String encodedEmail = Base64.encodeBase64String(baos.toByteArray());
+        Message message = new Message();
+        message.setRaw(encodedEmail);
+        return message;
     }
 }
