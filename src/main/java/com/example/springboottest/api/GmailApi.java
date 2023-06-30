@@ -13,16 +13,17 @@ import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
 import com.google.api.services.gmail.model.MessagePartBody;
 import com.mashape.unirest.http.Unirest;
-import io.opencensus.stats.Measure;
 import org.json.JSONObject;
 
 import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Session;
-import javax.mail.internet.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.util.ByteArrayDataSource;
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -31,8 +32,8 @@ import java.util.Properties;
 
 public class GmailApi {
     public static final String TOKEN_URL = "https://accounts.google.com/o/oauth2/token";
-    private final String APPLICATION_NAME = "Gmail API Java Quickstart";
-    private final String GRANT_TYPE = "refresh_token";
+    private static final String APPLICATION_NAME = "Gmail API Java Quickstart";
+    private static final String GRANT_TYPE = "refresh_token";
     private final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private final String USER = "me";
     private final JSONObject clientCredentials = new JSONObject();
@@ -146,8 +147,8 @@ public class GmailApi {
         List<String> csvFileRow = new ArrayList<>();
         String line;
         int i = 0;
-        int dataSize = 5; //todo monacemta shezgudva
-        while ((line = bufferedReader.readLine()) != null && i < dataSize + 2) {
+//        int dataSize = 3;
+        while ((line = bufferedReader.readLine()) != null) {
             csvFileRow.add(line);
             i++;
         }
@@ -175,6 +176,12 @@ public class GmailApi {
     }
 
     public static MimeMessage createEmail(String to, String from, String subject, String bodyText) throws MessagingException {
+        MimeMessage email = new MimeMessage(getMimeMessage(from, to, subject));
+        email.setText(bodyText);
+        return email;
+    }
+
+    private static MimeMessage getMimeMessage(String from, String to, String subject) throws MessagingException {
         Properties props = new Properties();
         Session session = Session.getDefaultInstance(props, null);
 
@@ -183,31 +190,25 @@ public class GmailApi {
         email.addRecipient(javax.mail.Message.RecipientType.TO,
                 new InternetAddress(to));
         email.setSubject(subject);
-        email.setText(bodyText);
         return email;
     }
 
-    public static MimeMessage createEmailWithAttachment(String to, String from, String subject, String bodyText, File file) throws MessagingException {
-        Properties props = new Properties();
-        Session session = Session.getDefaultInstance(props, null);
-
-        MimeMessage email = new MimeMessage(session);
-
-        email.setFrom(new InternetAddress(from));
-        email.addRecipient (javax.mail.Message.RecipientType.TO, new InternetAddress(to));
-        email.setSubject(subject);
-
+    public static MimeMessage createEmailWithAttachment(String to, String from, String subject, String bodyText, String dataAsString) throws MessagingException {
+        MimeMessage email = getMimeMessage(from, to, subject);
         MimeBodyPart mimeBodyPart = new MimeBodyPart();
-        mimeBodyPart.setContent(bodyText, "text/csv") ;
+        mimeBodyPart.setContent(bodyText, "text/csv");
 
         Multipart multipart = new MimeMultipart();
         multipart.addBodyPart(mimeBodyPart);
 
         mimeBodyPart = new MimeBodyPart();
-        DataSource source = new FileDataSource(file);
-
-        mimeBodyPart.setDataHandler(new DataHandler(source) ) ;
-        mimeBodyPart.setFileName(file.getName());
+        String attachmentName = "file.csv";
+        try {
+            mimeBodyPart.setDataHandler(new DataHandler(new ByteArrayDataSource(dataAsString, "text/csv")));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        mimeBodyPart.setFileName(attachmentName);
 
         multipart.addBodyPart(mimeBodyPart);
         email.setContent(multipart, "text/csv");
@@ -215,13 +216,13 @@ public class GmailApi {
     }
 
     private Message createMessageWithEmail(MimeMessage email) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try {
-            email.writeTo(baos);
+            email.writeTo(byteArrayOutputStream);
         } catch (IOException | MessagingException e) {
             throw new RuntimeException(e);
         }
-        String encodedEmail = Base64.encodeBase64String(baos.toByteArray());
+        String encodedEmail = Base64.encodeBase64String(byteArrayOutputStream.toByteArray());
         Message message = new Message();
         message.setRaw(encodedEmail);
         return message;
