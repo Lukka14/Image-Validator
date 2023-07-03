@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 public class CSVFile {
     private List<List<String>> csvData = new ArrayList<>();
-    private static final String CSV_URL_COLUMN_NAME = "shortedUrl";
+    private static final String CSV_URL_COLUMN_NAME = "spwUrl";
     private static final String VALUE_DELIMITER = ",";
     private static final String DATA_DELIMITER = "\",\"";
     private static final String DATA_SURROUNDINGS = "\"";
