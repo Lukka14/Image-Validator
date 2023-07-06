@@ -6,15 +6,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URL;
+import java.net.*;
 import java.util.HashSet;
 import java.util.Set;
 
 public class ImageUrlExtractor {
-        public static void main(String[] args) {
+        public static void main(String[] args) throws IOException {
             Set<String> imageUrlSet = getImagesFromPage("https://46227-selenium-ln.spw4u.com/");
             System.out.println("imageUrlSet.size() = " + imageUrlSet.size());
             int i=0;
@@ -49,7 +46,7 @@ public class ImageUrlExtractor {
             return imageUrlSet;
         }
 
-    public static int getImageRequestStatus(String imageUrl, boolean proxyEnabled) {
+    public static int getImageRequestStatus(String imageUrl, boolean proxyEnabled)   {
         try {
             URL url = new URL(imageUrl);
 
@@ -71,14 +68,10 @@ public class ImageUrlExtractor {
             connection.setRequestMethod("HEAD");
 
             // Get the response code
-            int responseCode = connection.getResponseCode();
-
-            return responseCode;
-        } catch (IOException e) {
-            e.printStackTrace();
+            return connection.getResponseCode();
+        }catch (IOException e){
+            return 502;
         }
-
-        return -1; // Return -1 in case of an exception
     }
 
 }

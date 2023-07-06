@@ -7,6 +7,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.lang.model.SourceVersion;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -37,51 +40,52 @@ public class HttpRequestExample {
         }
         return imageStatusMap;
     }
-
     private boolean checkImageExists(String websiteUrl,boolean proxyEnabled) {
+
         WebClient webClient = WebClient.builder().build();
-        long startTime = System.currentTimeMillis();
+//        long startTime = System.currentTimeMillis();
 
-        webClient.get()
-                .uri(websiteUrl)
-                .exchange()
-                .doOnSuccess(response -> {
-//                    System.out.println(websiteUrl+" : "+response.statusCode().value()+" : "+(System.currentTimeMillis()-startTime)/1000);
-                })
-                .block();
-
+//        webClient.get()
+//                .uri(websiteUrl)
+//                .exchange()
+//                .doOnSuccess(response -> {
+////                    System.out.println(websiteUrl+" : "+response.statusCode().value()+" : "+(System.currentTimeMillis()-startTime)/1000);
+//                })
+//                .block();
 
         Mono<String> htmlContentMono = webClient.get()
                 .uri(websiteUrl)
                 .accept(MediaType.TEXT_HTML)
                 .retrieve()
                 .bodyToMono(String.class);
-
         try {
-
-            htmlContentMono.flatMapMany(htmlContent -> {
-                Flux<String> imageUrls = extractImageUrlsFromHtml(htmlContent);
-                imageUrls = imageUrls.filter(imageUrl -> {
-                    if (imageUrl.endsWith(".gif")) {
-                        return false;
-                    }
-                    if (imageUrl.endsWith("soon.jpg")) {
-                        imageStatusMap.put(imageUrl, 403);
-                        return false;
-                    }
-                    return true;
-                });
-                return imageUrls.flatMap(imageUrl -> checkImageLoading(webClient, imageUrl, proxyEnabled));
-            }).blockLast();
+            htmlContentMono.flatMapMany(htmlContent -> lambdaMethod(htmlContent,webClient,proxyEnabled)).blockLast();
         }catch (WebClientResponseException e){
             if(e.getStatusCode().value()==404){
                 return false;
             }
+        }catch (WebClientRequestException e){
+            return false;
         }
-
 //        System.out.println(" : "+((System.currentTimeMillis() - startTime) / 1000));
         return true;
     }
+
+    private Flux<Object> lambdaMethod(String htmlContent,WebClient webClient,boolean proxyEnabled) {
+        Flux<String> imageUrls = extractImageUrlsFromHtml(htmlContent);
+        imageUrls = imageUrls.filter(imageUrl -> {
+            if (imageUrl.endsWith(".gif")) {
+                return false;
+            }
+            if (imageUrl.endsWith("soon.jpg")) {
+                imageStatusMap.put(imageUrl, 403);
+                return false;
+            }
+            return true;
+        });
+        return imageUrls.flatMap(imageUrl -> checkImageLoading(webClient, imageUrl, proxyEnabled));
+    }
+
     private static Flux<String> extractImageUrlsFromHtml(String htmlContent) {
         String regex = "<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>";
         Pattern pattern = Pattern.compile(regex);
@@ -90,6 +94,7 @@ public class HttpRequestExample {
         return Flux.fromStream(matcher.results()
                 .map(result -> result.group(1)));
     }
+
     private Mono<Void> checkImageLoading(WebClient webClient, String imageUrl,boolean proxyEnabled) {
         long startTime = System.currentTimeMillis();
         return webClient.get()
@@ -99,7 +104,7 @@ public class HttpRequestExample {
                     if (response.statusCode().value()==302){
                         String newImageURL = response.headers().header("Location").get(0);
                         int imageStatusCode = ImageUrlExtractor.getImageRequestStatus(newImageURL,proxyEnabled);
-//                        System.out.println("302 Image status: "+imageStatusCode);
+                        //                        System.out.println("302 Image status: "+imageStatusCode);
                         imageStatusMap.put(newImageURL,imageStatusCode);
 //                        System.out.println("Time elapsed: "+(System.currentTimeMillis()-startTime)/1000);
                     } else{

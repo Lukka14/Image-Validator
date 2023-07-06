@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MyController {
     volatile Set<ImageStatus> imageStatusListWithMulti = new HashSet<>();
     volatile Set<ImageStatus> imageStatusListWithoutMulti = new HashSet<>();
-
-    private static final boolean proxyEnabled = true;
+    private static final boolean proxyEnabled = false;
 
     class MyRunnable implements Runnable {
         private final CountDownLatch latch;
@@ -73,55 +72,55 @@ public class MyController {
         return "index";
     }
 
-    public static void main(String[] args) {
-        long generalStartTime = System.currentTimeMillis();
-        GmailApi gmailApi = new GmailApi("898543226384-5qtd3kngjii2706l2mq2a846i00kk53c.apps.googleusercontent.com",
-                "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",
-                "1//09r0-YKCjMuzyCgYIARAAGAkSNwF-L9IrSVjHp1IQkYf6LAbAmNLOpBMFPcvxUV6ySsfFQlkXNaAKwOmUp-JpKWOvLh56zJE5WLU");
-        CSVFile csvData = gmailApi.getAttachmentData("188d9147be8a0252");
-        List<String> pageUrlList = csvData.getAllPageUrlAsList();
-
-        StringBuilder message = new StringBuilder();
-        message.append("Web Pages: " + pageUrlList.size()+"\n");
-        File file = new File("src/main/resources/log/resultLog.txt");
-
-        HttpRequestExample httpRequestExample = new HttpRequestExample();
-        for (int i = 0; i < pageUrlList.size(); i++) {
-            long pageStartTime = System.currentTimeMillis();
-            String pageUrl = "https://" + pageUrlList.get(i);
-            Map<Integer, Integer> statusCodesAndTheirQuantityMap = new HashMap<>();
-            Map<String, Integer> imageStatusMap = httpRequestExample.getImageStatusMap(pageUrl, proxyEnabled);
-
-            message.append("#" + (i + 1) + "  " + pageUrl + " ; ");
-            AtomicInteger validPictureCount = new AtomicInteger(0);
-            if (imageStatusMap == null) {
-                message.append("404 ; - ; - ; ");
-            } else {
-                message.append("200 ; ");
-                imageStatusMap.forEach((imageUrl, statusCode) -> {
-
-                    if(statusCode==200){
-                        validPictureCount.getAndIncrement();
-                    }
-
-                    if (statusCodesAndTheirQuantityMap.containsKey(statusCode)) {
-                        int quantity = statusCodesAndTheirQuantityMap.get(statusCode);
-                        statusCodesAndTheirQuantityMap.put(statusCode, quantity + 1);
-                    } else {
-                        statusCodesAndTheirQuantityMap.put(statusCode, 1);
-                    }
-
-                });
-                statusCodesAndTheirQuantityMap.forEach((statusCode, quantity) -> message.append(imageStatusMap.size()+ " ; "+ validPictureCount.get()+" ; "));
-            }
-            long timeElapsedPerPage = (System.currentTimeMillis() - pageStartTime);
-            message.append(timeElapsedPerPage+"\n");
-            writeInFileAndOnConsole(message.toString(),file);
-            message.setLength(0);
-        }
-        long generalTimeElapsed = (System.currentTimeMillis() - generalStartTime);
-        writeInFileAndOnConsole("General time elapsed: " + generalTimeElapsed,file);
-    }
+//    public static void main(String[] args) {
+//        long generalStartTime = System.currentTimeMillis();
+//        GmailApi gmailApi = new GmailApi("898543226384-5qtd3kngjii2706l2mq2a846i00kk53c.apps.googleusercontent.com",
+//                "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",
+//                "1//09r0-YKCjMuzyCgYIARAAGAkSNwF-L9IrSVjHp1IQkYf6LAbAmNLOpBMFPcvxUV6ySsfFQlkXNaAKwOmUp-JpKWOvLh56zJE5WLU");
+//        CSVFile csvData = gmailApi.getAttachmentData("188d9147be8a0252");
+//        List<String> pageUrlList = csvData.getAllPageUrlAsList();
+////        pageUrlList.clear();
+////        pageUrlList.add("780-elm.spw4u.com");
+//        StringBuilder message = new StringBuilder();
+//        message.append("Web Pages: " + pageUrlList.size()+"\n");
+//        message.append("Proxy enabled: " + proxyEnabled+"\n");
+//        File file = new File("src/main/resources/log/resultLog.txt");
+//
+//        HttpRequestExample httpRequestExample = new HttpRequestExample();
+//        for (int i = 0; i < pageUrlList.size(); i++) {
+//            long pageStartTime = System.currentTimeMillis();
+//            String pageUrl = "https://" + pageUrlList.get(i);
+//            Map<Integer, Integer> statusCodesAndTheirQuantityMap = new HashMap<>();
+//            Map<String, Integer> imageStatusMap = httpRequestExample.getImageStatusMap(pageUrl, proxyEnabled);
+//
+//            message.append("#" + (i + 1) + "  " + pageUrl + " ; ");
+//            AtomicInteger validPictureCount = new AtomicInteger(0);
+//            if (imageStatusMap == null) {
+//                message.append("404 ; - ; - ; ");
+//            } else {
+//                message.append("200 ; ");
+//                imageStatusMap.forEach((imageUrl, statusCode) -> {
+//                    if(statusCode==200){
+//                        validPictureCount.getAndIncrement();
+//                    }
+//                    if (statusCodesAndTheirQuantityMap.containsKey(statusCode)) {
+//                        int quantity = statusCodesAndTheirQuantityMap.get(statusCode);
+//                        statusCodesAndTheirQuantityMap.put(statusCode, quantity + 1);
+//                    } else {
+//                        statusCodesAndTheirQuantityMap.put(statusCode, 1);
+//                    }
+//
+//                });
+//                statusCodesAndTheirQuantityMap.forEach((statusCode, quantity) -> message.append(imageStatusMap.size()+ " ; "+ validPictureCount.get()+" ; "));
+//            }
+//            long timeElapsedPerPage = (System.currentTimeMillis() - pageStartTime);
+//            message.append(timeElapsedPerPage+"\n");
+//            writeInFileAndOnConsole(message.toString(),file);
+//            message.setLength(0);
+//        }
+//        long generalTimeElapsed = (System.currentTimeMillis() - generalStartTime);
+//        writeInFileAndOnConsole("General time elapsed: " + generalTimeElapsed+"\n",file);
+//    }
 
     public static void writeInFileAndOnConsole(String message, File file){
         try(FileWriter fileWriter = new FileWriter(file,true)) {
