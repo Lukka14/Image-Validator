@@ -3,6 +3,7 @@ package com.example.springboottest;
 import com.example.springboottest.api.GmailApi;
 import com.example.springboottest.services.CSVFile;
 
+import javax.mail.MessagingException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -36,7 +37,7 @@ public class Main {
         File file = new File(logFilePath);
 
         HttpRequestExample httpRequestExample = new HttpRequestExample();
-        for (int i = 0; i < pageUrlList.size(); i++) {
+        for (int i = 0; i < 15; i++) {
             long pageStartTime = System.currentTimeMillis();
             String pageUrl = "https://" + pageUrlList.get(i);
             Map<Integer, Integer> statusCodesAndTheirQuantityMap = new HashMap<>();
@@ -67,8 +68,17 @@ public class Main {
             writeInFileAndOnConsole(message.toString(),file);
             message.setLength(0);
         }
+
         long generalTimeElapsed = (System.currentTimeMillis() - generalStartTime);
         writeInFileAndOnConsole("General time elapsed: " + generalTimeElapsed+"\n",file);
+        csvData.readResultLog();
+        String filePath = "src/main/java/com/example/springboottest/api/csv/new6.csv";
+//        csvData.writeCSVFile(filePath);
+        try {
+            gmailApi.sendMessage(GmailApi.createEmailWithAttachment("singlebatumi@gmail.com", "me", "es aris testiii..", "vin iyo kata?!", csvData.getDataAsString()));
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void writeInFileAndOnConsole(String message, File file){

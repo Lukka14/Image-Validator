@@ -1,6 +1,5 @@
 package com.example.springboottest.controllers;
 
-import com.example.springboottest.HttpRequestExample;
 import com.example.springboottest.ImageStatus;
 import com.example.springboottest.api.GmailApi;
 import com.example.springboottest.services.CSVFile;
@@ -11,9 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MyController {

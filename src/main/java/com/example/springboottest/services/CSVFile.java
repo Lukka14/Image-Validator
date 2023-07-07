@@ -1,11 +1,14 @@
 package com.example.springboottest.services;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CSVFile {
     private List<List<String>> csvData = new ArrayList<>();
@@ -37,6 +40,7 @@ public class CSVFile {
         }
         return dataAsList;
     }
+
     public List<String> getAllPageUrlAsList() {
         List<String> pageUrlList = new ArrayList<>();
         for (int i = 1; i < size(); i++) {
@@ -63,9 +67,9 @@ public class CSVFile {
         return stringBuilder.toString();
     }
 
-    public byte[] getDataAsByteArray(){
+    public byte[] getDataAsByteArray() {
         StringBuilder stringBuilder = new StringBuilder();
-        for (List<String> dataRow : csvData){
+        for (List<String> dataRow : csvData) {
             stringBuilder.append(Arrays.toString(convertListToByteArray(dataRow)));
         }
         return stringBuilder.toString().getBytes();
@@ -95,15 +99,74 @@ public class CSVFile {
 
         return values;
     }
+
     public List<String> getDataRowByIndex(int rowIndex) {
         return csvData.get(rowIndex);
     }
 
-    public void appendStatus(Map<String, String> statusMap) {
-        for (List<String> row : csvData) {
-            if (statusMap.containsKey(row.get(URL_COLUMN_INDEX))) {
-                row.add(statusMap.get(row.get(URL_COLUMN_INDEX)));
+    public void appendStatus(Map<String, String> statusMap, String webImage) {
+        int colIndex;
+        int dataRowIndex = -1;
+        for (int i = 1; i < csvData.size(); i++) {
+            if (csvData.get(i).get(URL_COLUMN_INDEX).equals(webImage)) {
+                dataRowIndex = i;
+                break;
             }
+        }
+
+        for (Map.Entry<String, String> entry : statusMap.entrySet()) {
+            String k = entry.getKey();
+            String v = entry.getValue();
+            if (!csvData.get(0).contains(k)) {
+                csvData.get(0).add(k);
+                colIndex = getColumnIndex(k);
+                for (int i = 1; i < csvData.size(); i++) {
+                    csvData.get(i).add(colIndex, "");
+                }
+            }
+            colIndex = getColumnIndex(k);
+            csvData.get(dataRowIndex).set(colIndex, v);
+        }
+    }
+
+    private int getColumnIndex(String value) {
+        List<String> valueRow = csvData.get(0);
+        for (int i = 0; i < valueRow.size(); i++) {
+            if (valueRow.get(i).equals(value)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public void readResultLog() throws IOException {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src/main/resources/config/config.properties"));
+        String logFilePath = properties.getProperty("logFilePath");
+        try (Scanner scanner = new Scanner(new File(logFilePath))) {
+            scanner.nextLine();
+            String resultRow = scanner.nextLine();
+            while (scanner.hasNext()) {
+                resultRow = scanner.nextLine();
+                if (scanner.hasNext()) {
+                    appendResult(resultRow);
+                }
+            }
+        }
+
+    }
+
+    public void appendResult(String resultRow) {
+        Map<String, String> websiteStatusMap = new HashMap<>();
+        List<String> listOfResult = Stream.of(resultRow.split(";")).map(String::trim).collect(Collectors.toList());
+
+        if (!(listOfResult.size() < 6)) {
+            listOfResult = listOfResult.stream().map(String::trim).collect(Collectors.toList());
+            websiteStatusMap.put("website status", listOfResult.get(2));
+            websiteStatusMap.put("image count", listOfResult.get(3));
+            websiteStatusMap.put("image opened", listOfResult.get(4));
+            websiteStatusMap.put("time elapsed", listOfResult.get(5));
+            appendStatus(websiteStatusMap, listOfResult.get(1).substring(8));
         }
     }
 
