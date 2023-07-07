@@ -39,7 +39,7 @@ public class Main {
         for (int i = 0; i < pageUrlList.size(); i++) {
             long pageStartTime = System.currentTimeMillis();
             String pageUrl = "https://" + pageUrlList.get(i);
-            Map<Integer, Integer> statusCodesAndTheirQuantityMap = new HashMap<>();
+//            Map<Integer, Integer> statusCodesAndTheirQuantityMap = new HashMap<>();
             Map<String, Integer> imageStatusMap = httpRequestExample.getImageStatusMap(pageUrl, proxyEnabled);
 
             message.append("#" + (i + 1) + " ; " + pageUrl + " ; ");
@@ -52,15 +52,15 @@ public class Main {
                     if(statusCode==200){
                         validPictureCount.getAndIncrement();
                     }
-                    if (statusCodesAndTheirQuantityMap.containsKey(statusCode)) {
-                        int quantity = statusCodesAndTheirQuantityMap.get(statusCode);
-                        statusCodesAndTheirQuantityMap.put(statusCode, quantity + 1);
-                    } else {
-                        statusCodesAndTheirQuantityMap.put(statusCode, 1);
-                    }
-
+//                    if (statusCodesAndTheirQuantityMap.containsKey(statusCode)) {
+//                        int quantity = statusCodesAndTheirQuantityMap.get(statusCode);
+//                        statusCodesAndTheirQuantityMap.put(statusCode, quantity + 1);
+//                    } else {
+//                        statusCodesAndTheirQuantityMap.put(statusCode, 1);
+//                    }
+//
                 });
-                statusCodesAndTheirQuantityMap.forEach((statusCode, quantity) -> message.append(imageStatusMap.size()+ " ; "+ validPictureCount.get()+" ; "));
+                message.append(imageStatusMap.size()+ " ; "+ validPictureCount.get()+" ; ");
             }
             long timeElapsedPerPage = (System.currentTimeMillis() - pageStartTime);
             message.append(timeElapsedPerPage+"\n");

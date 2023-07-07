@@ -1,6 +1,5 @@
 package com.example.springboottest.controllers;
 
-import com.example.springboottest.HttpRequestExample;
 import com.example.springboottest.ImageStatus;
 import com.example.springboottest.api.GmailApi;
 import com.example.springboottest.services.CSVFile;
@@ -13,7 +12,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MyController {

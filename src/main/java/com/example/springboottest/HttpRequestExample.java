@@ -41,7 +41,7 @@ public class HttpRequestExample {
         return imageStatusMap;
     }
     private boolean checkImageExists(String websiteUrl,boolean proxyEnabled) {
-
+//        System.out.println("websiteUrl = " + websiteUrl);
         WebClient webClient = WebClient.builder().build();
 //        long startTime = System.currentTimeMillis();
 
@@ -52,7 +52,6 @@ public class HttpRequestExample {
 ////                    System.out.println(websiteUrl+" : "+response.statusCode().value()+" : "+(System.currentTimeMillis()-startTime)/1000);
 //                })
 //                .block();
-
         Mono<String> htmlContentMono = webClient.get()
                 .uri(websiteUrl)
                 .accept(MediaType.TEXT_HTML)

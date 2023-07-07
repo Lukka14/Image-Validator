@@ -66,9 +66,13 @@ public class ImageUrlExtractor {
 
             // Set the request method to HEAD
             connection.setRequestMethod("HEAD");
+            int responseCode = connection.getResponseCode();
+            if(!proxyEnabled && (responseCode == 403 || responseCode==404)) {
+                return getImageRequestStatus(imageUrl,true);
+            }
 
             // Get the response code
-            return connection.getResponseCode();
+            return responseCode;
         }catch (IOException e){
             return 502;
         }
