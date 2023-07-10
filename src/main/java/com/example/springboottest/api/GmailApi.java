@@ -12,6 +12,7 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePart;
 import com.google.api.services.gmail.model.MessagePartBody;
+import com.google.api.services.gmail.model.MessagePartHeader;
 import com.mashape.unirest.http.Unirest;
 import org.json.JSONObject;
 
@@ -38,13 +39,14 @@ public class GmailApi {
     private final String USER = "me";
     private final JSONObject clientCredentials = new JSONObject();
     private Gmail gmailService;
+//    public int dataSize = 15;
 
     public GmailApi(String clientId, String clientSecret, String refreshToken) {
         setCredentials(clientId, clientSecret, refreshToken);
         buildGmailService();
     }
 
-    public void setCredentials(String clientId, String clientSecret, String refreshToken) {
+    private void setCredentials(String clientId, String clientSecret, String refreshToken) {
         clientCredentials.put("client_id", clientId);
         clientCredentials.put("client_secret", clientSecret);
         clientCredentials.put("refresh_token", refreshToken);
@@ -146,11 +148,10 @@ public class GmailApi {
         BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
         List<String> csvFileRow = new ArrayList<>();
         String line;
-        int i = 0;
-//        int dataSize = 3;
+//        int i = 0;
         while ((line = bufferedReader.readLine()) != null) {
             csvFileRow.add(line);
-            i++;
+//            i++;
         }
         CSVFile csvFile = new CSVFile(csvFileRow);
 
@@ -226,5 +227,10 @@ public class GmailApi {
         Message message = new Message();
         message.setRaw(encodedEmail);
         return message;
+    }
+
+    public List<Message> getListSearchedMessages(String search) throws IOException {
+        List<Message> messageStubs = gmailService.users().messages().list(USER).setQ(search).execute().getMessages();
+        return messageStubs == null ? new ArrayList<>() : messageStubs;
     }
 }

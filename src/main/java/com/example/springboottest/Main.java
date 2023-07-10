@@ -2,16 +2,14 @@ package com.example.springboottest;
 
 import com.example.springboottest.api.GmailApi;
 import com.example.springboottest.services.CSVFile;
+import com.google.api.services.gmail.model.Message;
 
 import javax.mail.MessagingException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.HashMap;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
@@ -28,16 +26,18 @@ public class Main {
         GmailApi gmailApi = new GmailApi("898543226384-5qtd3kngjii2706l2mq2a846i00kk53c.apps.googleusercontent.com",
                 "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",
                 "1//09r0-YKCjMuzyCgYIARAAGAkSNwF-L9IrSVjHp1IQkYf6LAbAmNLOpBMFPcvxUV6ySsfFQlkXNaAKwOmUp-JpKWOvLh56zJE5WLU");
-        CSVFile csvData = gmailApi.getAttachmentData("188d9147be8a0252");
+        List<Message> messageList = gmailApi.getListSearchedMessages("from: luka bezhanidze");
+        CSVFile csvData = gmailApi.getAttachmentData(messageList.get(0).getId());
+//        System.out.println(csvData.getDataAsString());
         List<String> pageUrlList = csvData.getAllPageUrlAsList();
 
         StringBuilder message = new StringBuilder();
-        message.append("Web Pages: " + pageUrlList.size()+"\n");
-        message.append("Proxy enabled: " + proxyEnabled+"\n");
+        message.append("Web Pages: " + pageUrlList.size() + "\n");
+        message.append("Proxy enabled: " + proxyEnabled + "\n");
         File file = new File(logFilePath);
 
         HttpRequestExample httpRequestExample = new HttpRequestExample();
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < pageUrlList.size(); i++) {
             long pageStartTime = System.currentTimeMillis();
             String pageUrl = "https://" + pageUrlList.get(i);
 //            Map<Integer, Integer> statusCodesAndTheirQuantityMap = new HashMap<>();
@@ -50,7 +50,7 @@ public class Main {
             } else {
                 message.append("200 ; ");
                 imageStatusMap.forEach((imageUrl, statusCode) -> {
-                    if(statusCode==200){
+                    if (statusCode == 200) {
                         validPictureCount.getAndIncrement();
                     }
 //                    if (statusCodesAndTheirQuantityMap.containsKey(statusCode)) {
@@ -61,28 +61,28 @@ public class Main {
 //                    }
 //
                 });
-                message.append(imageStatusMap.size()+ " ; "+ validPictureCount.get()+" ; ");
+                message.append(imageStatusMap.size() + " ; " + validPictureCount.get() + " ; ");
             }
             long timeElapsedPerPage = (System.currentTimeMillis() - pageStartTime);
-            message.append(timeElapsedPerPage+"\n");
-            writeInFileAndOnConsole(message.toString(),file);
+            message.append(timeElapsedPerPage + "\n");
+            writeInFileAndOnConsole(message.toString(), file);
             message.setLength(0);
         }
 
         long generalTimeElapsed = (System.currentTimeMillis() - generalStartTime);
-        writeInFileAndOnConsole("General time elapsed: " + generalTimeElapsed+"\n",file);
+        writeInFileAndOnConsole("General time elapsed: " + generalTimeElapsed + "\n", file);
         csvData.readResultLog();
         String filePath = "src/main/java/com/example/springboottest/api/csv/new6.csv";
-//        csvData.writeCSVFile(filePath);
+        csvData.writeCSVFile(filePath);
         try {
-            gmailApi.sendMessage(GmailApi.createEmailWithAttachment("singlebatumi@gmail.com", "me", "es aris testiii..", "vin iyo kata?!", csvData.getDataAsString()));
+            gmailApi.sendMessage(GmailApi.createEmailWithAttachment("gkakhiani@gmail.com", "me", "პირველი ფაილი", "პირველი ფაილი", csvData.getDataAsString()));
         } catch (MessagingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void writeInFileAndOnConsole(String message, File file){
-        try(FileWriter fileWriter = new FileWriter(file,true)) {
+    public static void writeInFileAndOnConsole(String message, File file) {
+        try (FileWriter fileWriter = new FileWriter(file, true)) {
             System.out.print(message);
             fileWriter.append(message);
         } catch (IOException e) {

@@ -105,27 +105,23 @@ public class CSVFile {
     }
 
     public void appendStatus(Map<String, String> statusMap, String webImage) {
-        int colIndex;
-        int dataRowIndex = -1;
         for (int i = 1; i < csvData.size(); i++) {
             if (csvData.get(i).get(URL_COLUMN_INDEX).equals(webImage)) {
-                dataRowIndex = i;
+                 int dataRowIndex = i;
+                statusMap.forEach((k, v) -> {
+                    int colIndex;
+                    if (!csvData.get(0).contains(k)) {
+                        csvData.get(0).add(k);
+                        colIndex = getColumnIndex(k);
+                        for (int j = 1; j < csvData.size(); j++) {
+                            csvData.get(j).add(colIndex, "");
+                        }
+                    }
+                    colIndex = getColumnIndex(k);
+                    csvData.get(dataRowIndex).set(colIndex, v);
+                });
                 break;
             }
-        }
-
-        for (Map.Entry<String, String> entry : statusMap.entrySet()) {
-            String k = entry.getKey();
-            String v = entry.getValue();
-            if (!csvData.get(0).contains(k)) {
-                csvData.get(0).add(k);
-                colIndex = getColumnIndex(k);
-                for (int i = 1; i < csvData.size(); i++) {
-                    csvData.get(i).add(colIndex, "");
-                }
-            }
-            colIndex = getColumnIndex(k);
-            csvData.get(dataRowIndex).set(colIndex, v);
         }
     }
 
