@@ -18,16 +18,17 @@ import java.util.regex.Pattern;
 public class HttpRequestExample {
 
     private Map<String,Integer> imageStatusMap;
+    private static boolean enableProxy = false;
 
     public static void main(String[] args) {
         //String imageUrl = "https://bsu.edu.ge";
 //        String websiteUrl = "https://5175-s-canal-circle.spw4u.com/";
-        String websiteUrl = "https://222-n-rock-river-dr.spw4u.com/";
+        String websiteUrl = "https://37784-alder-court.spw4u.com/";
         long startTime = System.currentTimeMillis();
 //        int statusCode = checkImageExists(websiteUrl);
 //        System.out.println("Image response code: " + statusCode);
         HttpRequestExample httpRequestExample = new HttpRequestExample();
-        Map<String,Integer> imageStatusMap = httpRequestExample.getImageStatusMap(websiteUrl,true);
+        Map<String,Integer> imageStatusMap = httpRequestExample.getImageStatusMap(websiteUrl,enableProxy);
         System.out.println("imageStatusMap.size() = " + imageStatusMap.size());
         imageStatusMap.forEach((key,value) -> System.out.printf("%s : %d\n",key,value));
         System.out.println("Time elapsed: "+(System.currentTimeMillis()-startTime));
