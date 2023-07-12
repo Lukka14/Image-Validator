@@ -39,7 +39,6 @@ public class GmailApi {
     private final String USER = "me";
     private final JSONObject clientCredentials = new JSONObject();
     private Gmail gmailService;
-//    public int dataSize = 15;
 
     public GmailApi(String clientId, String clientSecret, String refreshToken) {
         setCredentials(clientId, clientSecret, refreshToken);
