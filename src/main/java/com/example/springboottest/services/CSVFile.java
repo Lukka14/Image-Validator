@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CSVFile {
@@ -43,7 +42,7 @@ public class CSVFile {
 
     public List<String> getAllPageUrlAsList() {
         List<String> pageUrlList = new ArrayList<>();
-        for (int i = 1; i < size(); i++) {
+        for (int i = 1; i < this.size(); i++) {
             pageUrlList.add(getUrlByIndex(i));
         }
         return pageUrlList;
@@ -104,10 +103,11 @@ public class CSVFile {
         return csvData.get(rowIndex);
     }
 
-    public void appendStatus(Map<String, String> statusMap, String webImage) {
+    public void appendStatus(Map<String, String> statusMap) {
+        String webImage = statusMap.remove(CSV_URL_COLUMN_NAME).replace("https://", "");
         for (int i = 1; i < csvData.size(); i++) {
             if (csvData.get(i).get(URL_COLUMN_INDEX).equals(webImage)) {
-                 int dataRowIndex = i;
+                int dataRowIndex = i;
                 statusMap.forEach((k, v) -> {
                     int colIndex;
                     if (!csvData.get(0).contains(k)) {
@@ -136,6 +136,7 @@ public class CSVFile {
     }
 
     public void readResultLog() throws IOException {
+        String valueNames = "url count;spwUrl;website status;image count;image opened;time elapsed (ms)";
         Properties properties = new Properties();
         properties.load(new FileInputStream("src/main/resources/config/config.properties"));
         String logFilePath = properties.getProperty("logFilePath");
@@ -144,25 +145,21 @@ public class CSVFile {
             String resultRow = scanner.nextLine();
             while (scanner.hasNext()) {
                 resultRow = scanner.nextLine();
-                if (scanner.hasNext()) {
-                    appendResult(resultRow);
-                }
+                appendResult(resultRow, valueNames);
             }
         }
-
     }
 
-    public void appendResult(String resultRow) {
+    public void appendResult(String resultRow, String valueNames) {
         Map<String, String> websiteStatusMap = new HashMap<>();
-        List<String> listOfResult = Stream.of(resultRow.split(";")).map(String::trim).collect(Collectors.toList());
+        List<String> listOfResult = Stream.of(resultRow.split(";")).map(String::trim).toList();
+        List<String> listOfValueName = Stream.of(valueNames.split(";")).map(String::trim).toList();
 
-        if (!(listOfResult.size() < 6)) {
-            listOfResult = listOfResult.stream().map(String::trim).collect(Collectors.toList());
-            websiteStatusMap.put("website status", listOfResult.get(2));
-            websiteStatusMap.put("image count", listOfResult.get(3));
-            websiteStatusMap.put("image opened", listOfResult.get(4));
-            websiteStatusMap.put("time elapsed", listOfResult.get(5));
-            appendStatus(websiteStatusMap, listOfResult.get(1).substring(8));
+        if (listOfResult.size() == listOfValueName.size()) {
+            for (int i = 1; i < listOfResult.size(); i++) {
+                websiteStatusMap.put(listOfValueName.get(i), listOfResult.get(i));
+            }
+            appendStatus(websiteStatusMap);
         }
     }
 
@@ -172,7 +169,9 @@ public class CSVFile {
 
     public static int getUrlIndex(List<String> data) {
         for (int i = 0; i < data.size(); i++) {
-            if (data.get(i).equals(CSV_URL_COLUMN_NAME)) return i;
+            if (data.get(i).equals(CSV_URL_COLUMN_NAME)) {
+                return i;
+            }
         }
         return -1;
     }
